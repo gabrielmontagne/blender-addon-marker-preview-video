@@ -1,0 +1,3 @@
+= Maker Preview Video
+
+Renders each (and only) the frames that has a marker set, then lays them out on the VSE, extending the images all through.
