@@ -1,6 +1,11 @@
+from collections import namedtuple
 from functools import reduce
 import bpy
+import re
 
+# re.sub(r'[\W_]+', '-', name),
+
+Span = namedtuple('Span', 'frame name length', defaults=[1])
 
 class DialogOperator(bpy.types.Operator):
     bl_idname = "object.dialog_operator"
@@ -17,30 +22,37 @@ class DialogOperator(bpy.types.Operator):
 
         scene = context.scene
         frame_start = scene.frame_start
+        frame_end = scene.frame_end
 
-        for m in scene.timeline_markers:
-            print('m', m.camera, m.frame, m.name)
+        print(frame_start, '→', frame_end)
 
         def to_spans(acc, next):
             frame = next.frame
-            is_first = not len(acc)
 
-            if is_first and frame > frame_start:
+            if frame < frame_start: return acc
+            if frame > frame_end: return acc
 
-                print(f'0-{frame}-')
-                acc =[ { 'frame': frame_start, 'name': 'start', 'length': frame - frame_start } ]
+            if not len(acc) and frame > frame_start:
+                print('synthetic first frame')
+                acc =[ Span(frame_start, 'start') ]
 
-            print('----', next)
-
-            span = {
-                'frame': next.frame,
-                'name': next.name
-            }
-
-            acc.append(span)
+            acc.append(Span(next.frame, next.name))
             return acc
 
-        spans = reduce(to_spans, scene.timeline_markers, [])
+        def assign_lengths(spans):
+            def calculate_length(acc, next):
+                i, (c, n) = next
+                is_last = i == len(spans) - 2
+                print(i, c, n, is_last, len(spans) - 2)
+
+                acc.append(c._replace(length=n.frame - c.frame))
+                if is_last:
+                    acc.append(n._replace(length=frame_end - n.frame))
+                return acc
+
+            return reduce(calculate_length, enumerate(zip(spans[:-1], spans[1:])), [])
+
+        spans = assign_lengths(reduce(to_spans, scene.timeline_markers, []))
         print('spans!', spans)
 
         self.report({'INFO'}, message)
