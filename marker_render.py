@@ -13,7 +13,9 @@ class DialogOperator(bpy.types.Operator):
     bl_idname = "object.dialog_operator"
     bl_label = "Simple Dialog Operator"
 
-    override_images = bpy.props.BoolProperty(name="Override images")
+    override_images: bpy.props.BoolProperty(name="Override images", default=False)
+    clear_vse_layer: bpy.props.BoolProperty(name="Clean VSE layer", default=True)
+    vse_layer_id: bpy.props.IntProperty(name='VSE target layer index', default=1)
 
     def execute(self, context):
 
@@ -75,6 +77,15 @@ class DialogOperator(bpy.types.Operator):
 
             if edit_scene is not None:
                 print('we have an edit scene, try to mount on VSE')
+                print('... on layer', self.vse_layer_id)
+                edit_scene.sequence_editor_create()
+                new_sequence = edit_scene.sequence_editor.sequences.new_image(
+                    name=span.name,
+                    filepath=bpy.path.relpath(out_path),
+                    frame_start=span.frame,
+                    channel=self.vse_layer_id
+                )
+                print('sequence', new_sequence)
 
             context.window_manager.progress_update(i)
 
