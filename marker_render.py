@@ -78,6 +78,8 @@ class DialogOperator(bpy.types.Operator):
             if edit_scene is not None:
                 print('we have an edit scene, try to mount on VSE')
                 print('... on layer', self.vse_layer_id)
+                print(f'should {self.clear_vse_layer} clear layer.')
+
                 edit_scene.sequence_editor_create()
                 new_sequence = edit_scene.sequence_editor.sequences.new_image(
                     name=span.name,
@@ -85,6 +87,7 @@ class DialogOperator(bpy.types.Operator):
                     frame_start=span.frame,
                     channel=self.vse_layer_id
                 )
+                new_sequence.frame_final_duration = span.length
                 print('sequence', new_sequence)
 
             context.window_manager.progress_update(i)
