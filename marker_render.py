@@ -10,6 +10,7 @@ def slugify(name):
 Span = namedtuple('Span', 'frame name length', defaults=[1])
 
 class DialogOperator(bpy.types.Operator):
+
     bl_idname = "object.dialog_operator"
     bl_label = "Simple Dialog Operator"
 
@@ -51,7 +52,14 @@ class DialogOperator(bpy.types.Operator):
 
             return reduce(calculate_length, enumerate(zip(spans[:-1], spans[1:])), [])
 
-        spans = assign_lengths(reduce(to_spans, scene.timeline_markers, []))
+        def to_frame(maker):
+            return maker.frame
+
+        spans = assign_lengths(reduce(to_spans, sorted(scene.timeline_markers, key=to_frame), []))
+
+        print(
+            '\n'.join([str(span) for span in spans])
+        )
 
         original_out = scene.render.filepath
         context.window_manager.progress_begin(0, len(spans))
