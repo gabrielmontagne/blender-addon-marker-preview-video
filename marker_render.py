@@ -57,11 +57,13 @@ class DialogOperator(bpy.types.Operator):
 
 
         original_out = scene.render.filepath
+        context.window_manager.progress_begin(0, len(spans))
         for i, span in enumerate(spans):
             out_path = f'//marker-frames/mark-{i:05d}-{slugify(span.name)}'
             scene.render.filepath = out_path
             scene.frame_current = span.frame
             bpy.ops.render.render(write_still=True, scene=scene.name)
+            context.window_manager.progress_update(i)
 
         scene.render.filepath = original_out
 
