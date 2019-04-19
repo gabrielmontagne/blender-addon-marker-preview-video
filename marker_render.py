@@ -1,5 +1,6 @@
 from collections import namedtuple
 from functools import reduce
+from os import path
 import bpy
 import re
 
@@ -12,14 +13,9 @@ class DialogOperator(bpy.types.Operator):
     bl_idname = "object.dialog_operator"
     bl_label = "Simple Dialog Operator"
 
-    my_float = bpy.props.FloatProperty(name="Some Floating Point")
-    my_bool = bpy.props.BoolProperty(name="Toggle Option")
-    my_string = bpy.props.StringProperty(name="String Value")
+    override_images = bpy.props.BoolProperty(name="Override images")
 
     def execute(self, context):
-
-        message = "Popup Values: %f, %d, '%s'" % \
-            (self.my_float, self.my_bool, self.my_string)
 
         scene = context.scene
         frame_start = scene.frame_start
@@ -55,19 +51,36 @@ class DialogOperator(bpy.types.Operator):
 
         spans = assign_lengths(reduce(to_spans, scene.timeline_markers, []))
 
-
         original_out = scene.render.filepath
         context.window_manager.progress_begin(0, len(spans))
         for i, span in enumerate(spans):
-            out_path = f'//marker-frames/mark-{i:05d}-{slugify(span.name)}'
+            out_path = f'//marker-frames/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.png'
             scene.render.filepath = out_path
             scene.frame_current = span.frame
-            bpy.ops.render.render(write_still=True, scene=scene.name)
+
+            print('path', bpy.path.abspath(out_path))
+            print('    path exists?', path.exists(bpy.path.abspath(out_path)))
+
+            if path.exists(bpy.path.abspath(out_path)):
+                print(f'File {out_path} already exists.')
+                if self.override_images:
+                    print('Override images, render')
+                    bpy.ops.render.render(write_still=True, scene=scene.name)
+                else:
+                    print('Skip rerender')
+            else:
+                bpy.ops.render.render(write_still=True, scene=scene.name)
+
+            edit_scene = bpy.data.scenes.get('edit')
+
+            if edit_scene is not None:
+                print('we have an edit scene, try to mount on VSE')
+
             context.window_manager.progress_update(i)
 
         scene.render.filepath = original_out
 
-        print('spans!', spans)
+        message = f'Done! renderered {len(spans)} marker images'
 
         self.report({'INFO'}, message)
         return {'FINISHED'}
