@@ -11,20 +11,18 @@ Span = namedtuple('Span', 'frame name length', defaults=[1])
 
 class DialogOperator(bpy.types.Operator):
 
-    bl_idname = "object.dialog_operator"
-    bl_label = "Simple Dialog Operator"
+    bl_idname = "anim.preview_from_markers"
+    bl_label = "Preview from markers"
 
     override_images: bpy.props.BoolProperty(name="Override images", default=False)
-    clear_vse_layer: bpy.props.BoolProperty(name="Clean VSE layer", default=True)
-    vse_layer_id: bpy.props.IntProperty(name='VSE target layer index', default=1)
+    clear_vse_channel: bpy.props.BoolProperty(name="Clean VSE channel", default=True)
+    vse_channel_id: bpy.props.IntProperty(name='VSE target channel index', default=1)
 
     def execute(self, context):
 
         scene = context.scene
         frame_start = scene.frame_start
         frame_end = scene.frame_end
-
-        print(frame_start, '→', frame_end)
 
         def to_spans(acc, next):
             frame = next.frame
@@ -33,7 +31,6 @@ class DialogOperator(bpy.types.Operator):
             if frame > frame_end: return acc
 
             if not len(acc) and frame > frame_start:
-                print('synthetic first frame')
                 acc =[ Span(frame_start, 'start') ]
 
             acc.append(Span(next.frame, next.name))
@@ -43,7 +40,6 @@ class DialogOperator(bpy.types.Operator):
             def calculate_length(acc, next):
                 i, (c, n) = next
                 is_last = i == len(spans) - 2
-                print(i, c, n, is_last, len(spans) - 2)
 
                 acc.append(c._replace(length=n.frame - c.frame))
                 if is_last:
@@ -57,9 +53,23 @@ class DialogOperator(bpy.types.Operator):
 
         spans = assign_lengths(reduce(to_spans, sorted(scene.timeline_markers, key=to_frame), []))
 
-        print(
-            '\n'.join([str(span) for span in spans])
-        )
+        print('\n'.join([str(span) for span in spans]))
+
+        edit_scene = bpy.data.scenes.get('edit')
+        if edit_scene is not None:
+
+            print('we have an edit scene, try to mount on VSE')
+            print('... on channel', self.vse_channel_id)
+            print(f'should {self.clear_vse_channel} clear channel.')
+
+            edit_scene.sequence_editor_create()
+            sequence_editor = edit_scene.sequence_editor
+
+            if self.clear_vse_channel:
+                for s in list(sequence_editor.sequences):
+                    if s.channel == self.vse_channel_id:
+                        print('Removing sequence', s)
+                        sequence_editor.sequences.remove(s)
 
         original_out = scene.render.filepath
         context.window_manager.progress_begin(0, len(spans))
@@ -67,9 +77,6 @@ class DialogOperator(bpy.types.Operator):
             out_path = f'//marker-frames/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.png'
             scene.render.filepath = out_path
             scene.frame_current = span.frame
-
-            print('path', bpy.path.abspath(out_path))
-            print('    path exists?', path.exists(bpy.path.abspath(out_path)))
 
             if path.exists(bpy.path.abspath(out_path)):
                 print(f'File {out_path} already exists.')
@@ -81,19 +88,13 @@ class DialogOperator(bpy.types.Operator):
             else:
                 bpy.ops.render.render(write_still=True, scene=scene.name)
 
-            edit_scene = bpy.data.scenes.get('edit')
 
             if edit_scene is not None:
-                print('we have an edit scene, try to mount on VSE')
-                print('... on layer', self.vse_layer_id)
-                print(f'should {self.clear_vse_layer} clear layer.')
-
-                edit_scene.sequence_editor_create()
-                new_sequence = edit_scene.sequence_editor.sequences.new_image(
+                new_sequence = sequence_editor.sequences.new_image(
                     name=span.name,
                     filepath=bpy.path.relpath(out_path),
                     frame_start=span.frame,
-                    channel=self.vse_layer_id
+                    channel=self.vse_channel_id
                 )
                 new_sequence.frame_final_duration = span.length
                 print('sequence', new_sequence)
@@ -119,5 +120,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-    print('\n' * 5)
-    bpy.ops.object.dialog_operator('INVOKE_DEFAULT')
+    bpy.ops.anim.preview_from_markers('INVOKE_DEFAULT')
