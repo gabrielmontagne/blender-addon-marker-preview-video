@@ -3,7 +3,8 @@ from functools import reduce
 import bpy
 import re
 
-# re.sub(r'[\W_]+', '-', name),
+def slugify(name):
+    return re.sub(r'[\W_]+', '-', name)
 
 Span = namedtuple('Span', 'frame name length', defaults=[1])
 
@@ -53,6 +54,17 @@ class DialogOperator(bpy.types.Operator):
             return reduce(calculate_length, enumerate(zip(spans[:-1], spans[1:])), [])
 
         spans = assign_lengths(reduce(to_spans, scene.timeline_markers, []))
+
+
+        original_out = scene.render.filepath
+        for i, span in enumerate(spans):
+            out_path = f'//marker-frames/mark-{i:05d}-{slugify(span.name)}'
+            scene.render.filepath = out_path
+            scene.frame_current = span.frame
+            bpy.ops.render.render(write_still=True, scene=scene.name)
+
+        scene.render.filepath = original_out
+
         print('spans!', spans)
 
         self.report({'INFO'}, message)
