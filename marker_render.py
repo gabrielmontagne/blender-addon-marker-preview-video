@@ -4,12 +4,23 @@ from os import path
 import bpy
 import re
 
+bl_info = {
+    'name': 'Generate Preview from Marker renderers',
+    'author': 'gabriel montagné, gabriel@tibas.london',
+    'version': (0, 0, 1),
+    'blender': (2, 80, 0),
+    'description': 'Render all the frames with markers in them, and add the images to the VSE edit scene',
+    'tracker_url': 'https://github.com/gabrielmontagne/blender-addon-marker-preview-video/issues',
+    'category': 'Render'
+}
+
+
 def slugify(name):
     return re.sub(r'[\W_]+', '-', name)
 
 Span = namedtuple('Span', 'frame name length', defaults=[1])
 
-class DialogOperator(bpy.types.Operator):
+class RENDER_MARKER_OT_preview(bpy.types.Operator):
 
     bl_idname = "anim.preview_from_markers"
     bl_label = "Preview from markers"
@@ -113,10 +124,10 @@ class DialogOperator(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
 def register():
-    bpy.utils.register_class(DialogOperator)
+    bpy.utils.register_class(RENDER_MARKER_OT_preview)
 
 def unregister():
-    bpy.utils.unregister_class(DialogOperator)
+    bpy.utils.unregister_class(RENDER_MARKER_OT_preview)
 
 if __name__ == "__main__":
     register()

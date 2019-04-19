@@ -1,3 +1,12 @@
 = Maker Preview Video
 
-Renders each (and only) the frames that has a marker set, then lays them out on the VSE, extending the images all through.
+If you're working on a long animation and would like to get a sense of rhythm and look, mark the frames you'd like to check with markers on the timeline, then search the `Preview from markers` operator.
+
+The operator will generate images for each of the frames with markers.
+If you also have a scene named _edit_, the addon will place the images as strips on its VSE.
+
+When running the operator you'll see a dialog with the following options:
+
+Override images:: if this is off, frames that have already been rendered will not be rendered again.
+VSE target channel index:: the channel number on which to lay out the images strips.
+Clean VSE channel:: if this is on, all the strips on the VSE target channel (se above) will be deleted before the new ones are laid out.
