@@ -7,7 +7,7 @@ import re
 bl_info = {
     'name': 'Generate Preview from Marker renderers',
     'author': 'gabriel montagné, gabriel@tibas.london',
-    'version': (0, 0, 1),
+    'version': (0, 1, 0),
     'blender': (2, 80, 0),
     'description': 'Render all the frames with markers in them, and add the images to the VSE edit scene',
     'tracker_url': 'https://github.com/gabrielmontagne/blender-addon-marker-preview-video/issues',
@@ -64,9 +64,7 @@ class RENDER_MARKER_OT_preview(bpy.types.Operator):
 
         spans = assign_lengths(reduce(to_spans, sorted(scene.timeline_markers, key=to_frame), []))
 
-        print('\n'.join([str(span) for span in spans]))
-
-        edit_scene = bpy.data.scenes.get('edit')
+        edit_scene = bpy.data.scenes.get('Edit') or bpy.data.scenes.get('edit')
         if edit_scene is not None:
 
             print('we have an edit scene, try to mount on VSE')
