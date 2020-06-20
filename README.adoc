@@ -10,3 +10,5 @@ When running the operator you'll see a dialog with the following options:
 Override images:: if this is off, frames that have already been rendered will not be rendered again.
 VSE target channel index:: the channel number on which to lay out the images strips.
 Clean VSE channel:: if this is on, all the strips on the VSE target channel (se above) will be deleted before the new ones are laid out.
+
+NOTE: if you have a `VERSION.txt` with a version number, this version will be interpolated in the marker preview path.
