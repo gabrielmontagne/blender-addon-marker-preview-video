@@ -14,6 +14,7 @@ bl_info = {
     'category': 'Render'
 }
 
+version_file = 'VERSION.txt'
 
 def slugify(name):
     return re.sub(r'[\W_]+', '-', name)
@@ -30,6 +31,15 @@ class RENDER_MARKER_OT_preview(bpy.types.Operator):
     vse_channel_id: bpy.props.IntProperty(name='VSE target channel index', default=1)
 
     def execute(self, context):
+
+        filepath = bpy.data.filepath
+        base_dir = path.dirname(filepath)
+        version_path = path.join(base_dir, version_file)
+        version = None
+        if path.isfile(path.join(base_dir, version_path)):
+            version = open(version_path, 'r').read().strip()
+
+        print('version_path', version_path, version)
 
         scene = context.scene
         frame_start = scene.frame_start
@@ -64,7 +74,7 @@ class RENDER_MARKER_OT_preview(bpy.types.Operator):
 
         spans = assign_lengths(reduce(to_spans, sorted(scene.timeline_markers, key=to_frame), []))
 
-        edit_scene = bpy.data.scenes.get('Edit') or bpy.data.scenes.get('edit')
+        edit_scene = bpy.data.scenes.get('Edit') or bpy.data.scenes.get('edit') or bpy.data.scenes.get('__ Edit')
         if edit_scene is not None:
 
             print('we have an edit scene, try to mount on VSE')
@@ -81,10 +91,18 @@ class RENDER_MARKER_OT_preview(bpy.types.Operator):
                         sequence_editor.sequences.remove(s)
 
         original_out = scene.render.filepath
+        original_format = scene.render.image_settings.file_format
         context.window_manager.progress_begin(0, len(spans))
+
         for i, span in enumerate(spans):
-            out_path = f'//marker-frames/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.png'
+
+            if version:
+                out_path = f'//marker-frames/{version}/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.jpg'
+            else:
+                out_path = f'//marker-frames/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.jpg'
+
             scene.render.filepath = out_path
+            scene.render.image_settings.file_format = 'JPEG'
             scene.frame_current = span.frame
 
             if path.exists(bpy.path.abspath(out_path)):
@@ -111,6 +129,7 @@ class RENDER_MARKER_OT_preview(bpy.types.Operator):
             context.window_manager.progress_update(i)
 
         scene.render.filepath = original_out
+        scene.render.image_settings.file_format = original_format
 
         message = f'Done! renderered {len(spans)} marker images'
 
@@ -129,4 +148,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-    bpy.ops.anim.preview_from_markers('INVOKE_DEFAULT')
