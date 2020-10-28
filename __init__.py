@@ -1,6 +1,8 @@
 from collections import namedtuple
 from functools import reduce
 from os import path
+from shlex import split
+from subprocess import check_output
 import bpy
 import re
 
@@ -39,7 +41,14 @@ class RENDER_MARKER_OT_preview(bpy.types.Operator):
         if path.isfile(path.join(base_dir, version_path)):
             version = open(version_path, 'r').read().strip()
 
+        branch = None
+        try:
+            branch = check_output(split('git branch --show-current')).decode('utf8').strip()
+        except:
+            branch = ''
+
         print('version_path', version_path, version)
+        print('git branch', branch)
 
         scene = context.scene
         frame_start = scene.frame_start
@@ -97,9 +106,9 @@ class RENDER_MARKER_OT_preview(bpy.types.Operator):
         for i, span in enumerate(spans):
 
             if version:
-                out_path = f'//marker-frames/{version}/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.jpg'
+                out_path = f'//marker-frames/{branch}/{version}/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.jpg'
             else:
-                out_path = f'//marker-frames/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.jpg'
+                out_path = f'//marker-frames/{branch}/mark-{i:03d}-frame-{span.frame:06d}-{slugify(span.name)}.jpg'
 
             scene.render.filepath = out_path
             scene.render.image_settings.file_format = 'JPEG'
