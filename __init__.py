@@ -4,6 +4,7 @@ from os import path
 from shlex import split
 from subprocess import check_output
 import bpy
+from bpy.types import Operator
 import re
 
 bl_info = {
@@ -23,9 +24,9 @@ def slugify(name):
 
 Span = namedtuple('Span', 'frame name length', defaults=[1])
 
-class RENDER_MARKER_OT_preview(bpy.types.Operator):
+class RENDER_MARKER_OT_preview(Operator):
 
-    bl_idname = "anim.preview_from_markers"
+    bl_idname = "rojored.preview_from_markers"
     bl_label = "Preview from markers"
 
     override_images: bpy.props.BoolProperty(name="Override images", default=False)
@@ -149,10 +150,35 @@ class RENDER_MARKER_OT_preview(bpy.types.Operator):
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
 
+class RENDER_MARKER_OT_thumbnail(Operator):
+
+    bl_idname = "rojored.save_thumbnail"
+    bl_label = "Save thumbnail to target folder"
+
+    def execute(self, context):
+        scene = context.scene
+        target = '//target/thumbnail.png'
+        current_filepath = scene.render.filepath
+        current_file_format = scene.render.image_settings.file_format 
+        scene.render.filepath = target
+        scene.render.image_settings.file_format = 'PNG'
+
+        bpy.ops.render.render(write_still=True, scene=scene.name)
+
+
+        scene.render.image_settings.file_format = current_file_format
+        scene.render.filepath = current_filepath
+
+        print('save thumbnail', current_filepath, current_file_format)
+
+        return {'FINISHED'}
+
 def register():
     bpy.utils.register_class(RENDER_MARKER_OT_preview)
+    bpy.utils.register_class(RENDER_MARKER_OT_thumbnail)
 
 def unregister():
+    bpy.utils.unregister_class(RENDER_MARKER_OT_thumbnail)
     bpy.utils.unregister_class(RENDER_MARKER_OT_preview)
 
 if __name__ == "__main__":
